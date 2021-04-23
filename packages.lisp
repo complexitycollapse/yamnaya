@@ -1,7 +1,7 @@
 ;;;; package.lisp
 
-(defpackage #:%ApplicationName%
+(defpackage #:yamnaya
   (:use #:cl))
 
-(defpackage #:%ApplicationName%-tests
+(defpackage #:yamnaya-tests
   (:use #:cl #:0am))
