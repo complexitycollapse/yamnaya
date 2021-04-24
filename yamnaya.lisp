@@ -4,6 +4,7 @@
 
 (defvar *current-stream*)
 (defvar *context*)
+(defvar *indent-width*)
 
 (defclass context ()
   ((indent :initarg :indent)
@@ -12,12 +13,13 @@
 (defclass yaml-list (context) ())
 (defclass yaml-object (context) ())
 
-(defmacro with-yaml-stream (stream &body body)
-  `(f-with-yaml-stream ,stream (lambda () ,@body)))
+(defmacro with-yaml-stream ((stream &key indent-width) &body body)
+  `(f-with-yaml-stream ,stream ,indent-width (lambda () ,@body)))
 
-(defun f-with-yaml-stream (stream fn)
+(defun f-with-yaml-stream (stream indent-width fn)
   (let ((*current-stream* stream)
-	(*context* (make-context)))
+	(*context* (make-context))
+	(*indent-width* (or indent-width 2)))
     (funcall fn)
     (fresh-line *current-stream*)))
 
@@ -31,11 +33,12 @@
   (make-instance 'context :indent 0 :parent nil))
 
 (defun indent (&optional (context *context*))
-  (make-instance 'context :indent (1+ (slot-value context 'indent)) :parent context))
+  (make-instance 'context :indent (+ *indent-width* (slot-value context 'indent))
+			  :parent context))
 
 (defun yaml-format (format-directive &rest format-args)
   (fresh-line *current-stream*)
-  (dotimes (n (* 2 (slot-value *context* 'indent))) (write-char #\space *current-stream*))
+  (dotimes (n (slot-value *context* 'indent)) (write-char #\space *current-stream*))
   (apply #'format *current-stream* format-directive format-args))
 
 (defun encode-object-member (key value)
@@ -71,7 +74,7 @@
 
 (defun foo ()
   (with-output-to-string (s)
-    (with-yaml-stream s
+    (with-yaml-stream (s)
       (encode-comment "Here's some header material")
       (message-separator)
       (encode-list-member "foo")
